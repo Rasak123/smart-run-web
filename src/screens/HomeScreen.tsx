@@ -18,6 +18,7 @@ import {
   MoreVert,
 } from '@mui/icons-material';
 import { StorageService, Run } from '../services/StorageService';
+import ActivityFeed from '../components/social/ActivityFeed';
 
 interface Stats {
   totalRuns: number;
@@ -247,6 +248,14 @@ export default function HomeScreen() {
           </Typography>
         </Paper>
       )}
+
+      {/* Activity Feed */}
+      <Box sx={{ mt: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Recent Activity
+        </Typography>
+        <ActivityFeed />
+      </Box>
     </Box>
   );
 }
