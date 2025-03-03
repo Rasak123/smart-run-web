@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <base href="%PUBLIC_URL%/" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#000000" />
@@ -45,5 +46,11 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script src="%PUBLIC_URL%/healthkit-bridge.js"></script>
+    <script>
+      // Check if we need to redirect
+      if (window.location.pathname === '/smart-run-web/') {
+        window.location.replace(window.location.origin + '/smart-run-web/#/');
+      }
+    </script>
   </body>
 </html>
