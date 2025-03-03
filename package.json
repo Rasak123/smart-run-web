@@ -2,7 +2,7 @@
   "name": "smart-run-web",
   "version": "0.1.0",
   "private": true,
-  "homepage": ".",
+  "homepage": "https://rasak123.github.io/smart-run-web",
   "dependencies": {
     "@emotion/react": "^11.11.3",
     "@emotion/styled": "^11.11.0",
