@@ -1,13 +1,13 @@
 import { createTheme } from '@mui/material/styles';
 
-const theme = createTheme({
+export const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
       main: '#FC5200',
     },
     secondary: {
-      main: '#1976d2',
+      main: '#FF7433',
     },
     background: {
       default: '#121212',
@@ -15,7 +15,13 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h5: {
+      fontWeight: 600,
+    },
+    h6: {
+      fontWeight: 600,
+    },
   },
   components: {
     MuiButton: {
@@ -26,7 +32,12 @@ const theme = createTheme({
         },
       },
     },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+        },
+      },
+    },
   },
 });
-
-export default theme;
