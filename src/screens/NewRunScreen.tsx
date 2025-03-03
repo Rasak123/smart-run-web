@@ -1,21 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Button, Typography, IconButton, Paper, Grid } from '@mui/material';
+import { Box, Button, Typography, IconButton, Paper, Grid, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { MapContainer, TileLayer, useMap, Polyline, useMapEvents } from 'react-leaflet';
 import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Location } from '../types';
 
 interface Stats {
   distance: number;
   pace: string;
   duration: string;
   calories: number;
-}
-
-interface Location {
-  lat: number;
-  lng: number;
-  timestamp: number;
 }
 
 function MapController({ onLocationFound }: { onLocationFound: (location: [number, number]) => void }) {
@@ -38,6 +34,7 @@ function MapController({ onLocationFound }: { onLocationFound: (location: [numbe
 }
 
 export default function NewRunScreen() {
+  const navigate = useNavigate();
   const [activityType, setActivityType] = useState<'walk' | 'run'>('run');
   const [isActive, setIsActive] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
@@ -152,7 +149,16 @@ export default function NewRunScreen() {
     setIsActive(false);
     if (watchId.current) navigator.geolocation.clearWatch(watchId.current);
     if (timerRef.current) clearInterval(timerRef.current);
-    // Here you would typically save the activity data
+    
+    // Navigate to summary screen
+    navigate('/summary', { 
+      state: { 
+        ...stats,
+        routePoints,
+        activityType,
+        date: new Date()
+      } 
+    });
   };
 
   const handleLocationFound = (location: [number, number]) => {
@@ -161,6 +167,32 @@ export default function NewRunScreen() {
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Activity Type Selection */}
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 1,
+          borderRadius: 0
+        }}
+      >
+        <ToggleButtonGroup
+          value={activityType}
+          exclusive
+          onChange={(_, newValue) => newValue && setActivityType(newValue)}
+          aria-label="activity type"
+          fullWidth
+        >
+          <ToggleButton value="walk" aria-label="walk">
+            <DirectionsWalk sx={{ mr: 1 }} />
+            Walk
+          </ToggleButton>
+          <ToggleButton value="run" aria-label="run">
+            <DirectionsRun sx={{ mr: 1 }} />
+            Run
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Paper>
+
       {/* Map */}
       <Box sx={{ flex: 1, position: 'relative' }}>
         <MapContainer
@@ -183,38 +215,6 @@ export default function NewRunScreen() {
             />
           )}
         </MapContainer>
-
-        {/* Activity Type Selection */}
-        <Paper 
-          elevation={3} 
-          sx={{ 
-            position: 'absolute',
-            bottom: 100,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: 1,
-            p: 1,
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-            zIndex: 1000,
-          }}
-        >
-          <Button
-            variant={activityType === 'walk' ? 'contained' : 'text'}
-            onClick={() => setActivityType('walk')}
-            startIcon={<DirectionsWalk />}
-          >
-            Walk
-          </Button>
-          <Button
-            variant={activityType === 'run' ? 'contained' : 'text'}
-            onClick={() => setActivityType('run')}
-            startIcon={<DirectionsRun />}
-          >
-            Run
-          </Button>
-        </Paper>
 
         {/* Location Button */}
         <IconButton
