@@ -1,89 +1,36 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Box } from '@mui/material';
 import HomeScreen from './screens/HomeScreen';
 import NewRunScreen from './screens/NewRunScreen';
 import RunHistoryScreen from './screens/RunHistoryScreen';
-import StatisticsScreen from './screens/StatisticsScreen';
-import TrainingPlansScreen from './screens/TrainingPlansScreen';
-import ActivityScreen from './screens/ActivityScreen';
-import Navigation from './components/Navigation';
+import BottomNav from './components/navigation/BottomNav';
+import Box from '@mui/material/Box';
 
-const theme = createTheme({
+const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#FC5200', // Strava-like orange
-      light: '#FF7433',
-      dark: '#CC4200',
+      main: '#FC5200',
     },
     secondary: {
-      main: '#2E2E2E',
-      light: '#484848',
-      dark: '#1E1E1E',
+      main: '#1976d2',
     },
     background: {
-      default: '#1A1A1A',
-      paper: '#2E2E2E',
-    },
-    text: {
-      primary: '#FFFFFF',
-      secondary: '#B3B3B3',
+      default: '#121212',
+      paper: '#1e1e1e',
     },
   },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    h1: {
-      fontSize: '2.5rem',
-      fontWeight: 700,
-    },
-    h2: {
-      fontSize: '2rem',
-      fontWeight: 600,
-    },
-    h3: {
-      fontSize: '1.75rem',
-      fontWeight: 600,
-    },
-    h4: {
-      fontSize: '1.5rem',
-      fontWeight: 600,
-    },
-    h5: {
-      fontSize: '1.25rem',
-      fontWeight: 600,
-    },
-    h6: {
-      fontSize: '1rem',
-      fontWeight: 600,
-    },
-    button: {
-      textTransform: 'none',
-      fontWeight: 600,
-    },
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
+          textTransform: 'none',
           borderRadius: 8,
-          padding: '12px 24px',
-        },
-        contained: {
-          boxShadow: 'none',
-          '&:hover': {
-            boxShadow: 'none',
-          },
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          backgroundImage: 'none',
         },
       },
     },
@@ -92,33 +39,25 @@ const theme = createTheme({
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Router>
         <Box sx={{ 
+          height: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          minHeight: '100vh',
           bgcolor: 'background.default',
-          width: '100%',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflow: 'auto'
+          overflow: 'hidden'
         }}>
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
             <Routes>
               <Route path="/" element={<HomeScreen />} />
-              <Route path="/activity" element={<ActivityScreen />} />
               <Route path="/run" element={<NewRunScreen />} />
               <Route path="/history" element={<RunHistoryScreen />} />
-              <Route path="/stats" element={<StatisticsScreen />} />
-              <Route path="/plans" element={<TrainingPlansScreen />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Box>
-          <Navigation />
+          <BottomNav />
         </Box>
       </Router>
     </ThemeProvider>
