@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Paper, Grid, Button } from '@mui/material';
-import { DirectionsRun, Add as AddIcon } from '@mui/icons-material';
+import { DirectionsRun, Add as AddIcon, History } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 export default function HomeScreen() {
@@ -54,7 +54,16 @@ export default function HomeScreen() {
 
       {/* Quick Stats */}
       <Paper sx={{ p: 2 }}>
-        <Typography variant="h6" gutterBottom>Quick Stats</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6">Quick Stats</Typography>
+          <Button
+            variant="outlined"
+            startIcon={<History />}
+            onClick={() => navigate('/history')}
+          >
+            View History
+          </Button>
+        </Box>
         <Grid container spacing={2}>
           <Grid item xs={6}>
             <Paper sx={{ p: 2, textAlign: 'center' }} elevation={1}>
