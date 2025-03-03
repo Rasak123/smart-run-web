@@ -158,19 +158,19 @@ export default function RunHistoryScreen() {
           {selectedRun && formatDate(selectedRun.date)}
         </DialogTitle>
         <DialogContent>
-          {selectedRun && selectedRun.route.length > 0 && (
+          {selectedRun && selectedRun.locations.length > 0 && (
             <MapContainer
               style={mapContainerStyle}
-              center={[selectedRun.route[0].lat, selectedRun.route[0].lng]}
+              center={[selectedRun.locations[0].latitude, selectedRun.locations[0].longitude]}
               zoom={15}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
               <Polyline
-                positions={selectedRun.route.map(point => [point.lat, point.lng])}
-                color="#2196F3"
+                positions={selectedRun.locations.map(loc => [loc.latitude, loc.longitude])}
+                color="#FC5200"
                 weight={3}
               />
             </MapContainer>
