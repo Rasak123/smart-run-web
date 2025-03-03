@@ -1,31 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
   IconButton,
   Paper,
   Button,
-  LinearProgress,
+  CircularProgress,
 } from '@mui/material';
 import {
   PlayArrow,
   Stop,
-  MusicNote,
-  Settings,
   GpsFixed,
-  EmojiEvents,
-  FavoriteBorder,
+  DirectionsRun,
+  DirectionsWalk,
 } from '@mui/icons-material';
 import {
   MapContainer,
   TileLayer,
-  Marker,
   useMap,
+  Polyline,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { StorageService } from '../services/StorageService';
+import { StorageService, Run } from '../services/StorageService';
 import { HealthKitService } from '../services/HealthKitService';
 
 // Fix for default marker icon
@@ -35,6 +33,10 @@ L.Icon.Default.mergeOptions({
   iconUrl: require('leaflet/dist/images/marker-icon.png'),
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
+
+const darkMapStyle = {
+  filter: 'brightness(0.8) invert(1) contrast(1.2) hue-rotate(180deg) saturate(0.8)'
+};
 
 interface Location {
   latitude: number;
@@ -55,12 +57,30 @@ interface Run {
   heartRates: number[];
 }
 
-function MapComponent({ center }: { center: [number, number] }) {
+function MapComponent({ center, locations }: { center: [number, number], locations: Location[] }) {
   const map = useMap();
+  
   useEffect(() => {
-    map.setView(center);
+    map.setView(center, map.getZoom());
   }, [center, map]);
-  return null;
+
+  return (
+    <>
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://carto.com">CARTO</a>'
+        className="map-tiles"
+      />
+      {locations.length > 1 && (
+        <Polyline
+          positions={locations.map(loc => [loc.latitude, loc.longitude])}
+          color="#FC5200"
+          weight={4}
+          opacity={0.8}
+        />
+      )}
+    </>
+  );
 }
 
 export default function NewRunScreen() {
@@ -293,137 +313,163 @@ export default function NewRunScreen() {
   };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Header with GPS indicator */}
-      <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', position: 'relative' }}>
-        <Box sx={{ position: 'absolute', right: 16, top: 16, display: 'flex', alignItems: 'center' }}>
-          <Typography variant="caption" sx={{ mr: 0.5 }}>GPS</Typography>
-          <GpsFixed color={hasGPS ? "success" : "error"} />
-        </Box>
-      </Box>
-
-      {/* Timer and Stats */}
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="h1" sx={{ 
-          fontSize: '4rem', 
-          fontFamily: 'monospace',
-          fontWeight: 'bold',
-          mb: 3
-        }}>
-          {formatTime(time)}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">Duration</Typography>
-
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          mt: 4,
-          px: 2
-        }}>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h4">{distance.toFixed(2)}</Typography>
-            <Typography variant="caption" color="text.secondary">Distance (km)</Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h4">{calories}</Typography>
-            <Typography variant="caption" color="text.secondary">Calories (cal)</Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h4">{formatPace(pace)}</Typography>
-            <Typography variant="caption" color="text.secondary">Avg. Pace (min/km)</Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Map */}
-      <Box sx={{ flex: 1, position: 'relative', minHeight: '40vh' }}>
+    <Box sx={{ 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      bgcolor: 'background.default',
+      position: 'relative'
+    }}>
+      {/* Map Container */}
+      <Box sx={{ 
+        height: '60%', 
+        width: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: '0 0 24px 24px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+      }}>
         <MapContainer
+          style={{ height: '100%', width: '100%' }}
           center={currentLocation}
           zoom={16}
-          style={{ height: '100%', width: '100%' }}
+          zoomControl={false}
         >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-          <Marker position={currentLocation} />
-          <MapComponent center={currentLocation} />
+          <MapComponent center={currentLocation} locations={locations} />
         </MapContainer>
-
-        {/* Daily Goal Overlay */}
+        
+        {/* GPS Status Overlay */}
         <Paper
+          elevation={3}
           sx={{
             position: 'absolute',
-            bottom: 16,
-            left: 16,
-            p: 1,
-            borderRadius: 2,
-            bgcolor: 'rgba(0, 0, 0, 0.7)',
+            top: 16,
+            right: 16,
+            padding: '8px 16px',
+            borderRadius: '20px',
             display: 'flex',
             alignItems: 'center',
+            gap: 1,
+            bgcolor: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(10px)'
           }}
         >
-          <EmojiEvents sx={{ mr: 1 }} />
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="caption">Today</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography variant="body2">{dailyGoal.current.toFixed(1)}/{dailyGoal.target} km</Typography>
-            </Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={(dailyGoal.current / dailyGoal.target) * 100}
-              sx={{ mt: 0.5 }}
-            />
-          </Box>
+          <GpsFixed color={hasGPS ? "success" : "error"} />
+          <Typography variant="body2" color="text.secondary">
+            {hasGPS ? "GPS Ready" : "Acquiring GPS..."}
+          </Typography>
         </Paper>
       </Box>
 
-      {/* Bottom Controls */}
-      <Paper 
-        sx={{ 
-          p: 2,
-          borderRadius: '20px 20px 0 0',
-          bgcolor: 'background.paper',
-        }}
-        elevation={3}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <IconButton>
-            <MusicNote />
-          </IconButton>
-          <IconButton>
-            <Settings />
-          </IconButton>
+      {/* Stats and Controls */}
+      <Box sx={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column',
+        padding: 3,
+        gap: 3
+      }}>
+        {/* Stats Grid */}
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 2
+        }}>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center',
+            bgcolor: 'background.paper',
+            borderRadius: 3
+          }}>
+            <Typography variant="h4" color="primary">
+              {distance.toFixed(2)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Distance (km)
+            </Typography>
+          </Paper>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center',
+            bgcolor: 'background.paper',
+            borderRadius: 3
+          }}>
+            <Typography variant="h4" color="primary">
+              {formatTime(time)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Duration
+            </Typography>
+          </Paper>
         </Box>
 
-        {healthKit.isHealthKitAvailable() && !healthKitAuthorized && (
+        {/* Action Buttons */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2,
+          mt: 'auto'
+        }}>
           <Button
-            variant="outlined"
-            startIcon={<FavoriteBorder />}
-            onClick={() => healthKit.requestAuthorization()}
-            sx={{ mb: 2 }}
+            variant="contained"
+            fullWidth
+            size="large"
+            onClick={() => setActivityType('walk')}
+            startIcon={<DirectionsWalk />}
+            sx={{
+              py: 2,
+              borderRadius: 3,
+              bgcolor: activityType === 'walk' ? 'primary.main' : 'background.paper',
+              color: activityType === 'walk' ? 'white' : 'text.primary'
+            }}
           >
-            Connect Apple Health
+            Walk
           </Button>
-        )}
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            onClick={() => setActivityType('run')}
+            startIcon={<DirectionsRun />}
+            sx={{
+              py: 2,
+              borderRadius: 3,
+              bgcolor: activityType === 'run' ? 'primary.main' : 'background.paper',
+              color: activityType === 'run' ? 'white' : 'text.primary'
+            }}
+          >
+            Run
+          </Button>
+        </Box>
 
+        {/* Start/Stop Button */}
         <Button
           variant="contained"
           fullWidth
           size="large"
-          startIcon={isRunning ? <Stop /> : <PlayArrow />}
           onClick={isRunning ? stopRun : startRun}
+          disabled={!hasGPS}
           sx={{
-            py: 2,
-            bgcolor: isRunning ? 'error.main' : 'primary.main',
+            py: 3,
+            borderRadius: 3,
+            bgcolor: isRunning ? 'error.main' : 'success.main',
             '&:hover': {
-              bgcolor: isRunning ? 'error.dark' : 'primary.dark',
-            },
+              bgcolor: isRunning ? 'error.dark' : 'success.dark',
+            }
           }}
         >
-          {isRunning ? 'STOP' : `START ${activityType.toUpperCase()}`}
+          {isRunning ? (
+            <>
+              <Stop sx={{ mr: 1 }} />
+              Stop Activity
+            </>
+          ) : (
+            <>
+              <PlayArrow sx={{ mr: 1 }} />
+              Start Activity
+            </>
+          )}
         </Button>
-      </Paper>
+      </Box>
     </Box>
   );
 }
