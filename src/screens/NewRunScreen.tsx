@@ -184,9 +184,9 @@ export default function NewRunScreen() {
               const updated = prev + newDist;
               setPrevDistance(updated);
               // Update calories (using more accurate formula)
-              const weight = localStorage.getItem('userWeight') || 70; // kg
+              const weight = Number(localStorage.getItem('userWeight')) || 70; // kg
               const caloriesPerKm = weight * 0.9; // approximate calories burned per km
-              setCalories(Math.round(updated * caloriesPerKm));
+              setCalories(Math.round(Number(updated) * caloriesPerKm));
               return updated;
             });
           }
