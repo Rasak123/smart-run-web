@@ -1,11 +1,12 @@
 import React from 'react';
 import { Box, Button, Typography, Paper, Grid, IconButton } from '@mui/material';
 import { Share, ArrowBack } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
+import L from 'leaflet';
 import { Location } from '../types';
 
-interface ActivitySummaryProps {
+interface ActivitySummaryState {
   distance: number;
   duration: string;
   pace: string;
@@ -15,16 +16,17 @@ interface ActivitySummaryProps {
   date: Date;
 }
 
-export default function ActivitySummaryScreen({ 
-  distance, 
-  duration, 
-  pace, 
-  calories, 
-  routePoints,
-  activityType,
-  date
-}: ActivitySummaryProps) {
+export default function ActivitySummaryScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as ActivitySummaryState;
+
+  if (!state) {
+    navigate('/');
+    return null;
+  }
+
+  const { distance, duration, pace, calories, routePoints, activityType, date } = state;
 
   const handleSave = () => {
     // Save to storage and navigate to home
@@ -87,7 +89,7 @@ export default function ActivitySummaryScreen({
             {activityType === 'run' ? 'Running' : 'Walking'} Activity
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            {date.toLocaleDateString()} at {date.toLocaleTimeString()}
+            {new Date(date).toLocaleDateString()} at {new Date(date).toLocaleTimeString()}
           </Typography>
 
           <Grid container spacing={3} sx={{ mt: 2 }}>
