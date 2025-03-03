@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import HomeScreen from './screens/HomeScreen';
@@ -41,7 +41,7 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Router>
+      <HashRouter>
         <Box sx={{ 
           height: '100vh',
           display: 'flex',
@@ -54,12 +54,12 @@ function App() {
               <Route path="/" element={<HomeScreen />} />
               <Route path="/run" element={<NewRunScreen />} />
               <Route path="/history" element={<RunHistoryScreen />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </Box>
           <BottomNav />
         </Box>
-      </Router>
+      </HashRouter>
     </ThemeProvider>
   );
 }

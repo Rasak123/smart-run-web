@@ -7,12 +7,17 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const getPathValue = () => {
-    const path = location.pathname;
-    if (path === '/') return 0;
-    if (path === '/run') return 1;
-    if (path === '/history') return 2;
-    return 0;
+  const getCurrentValue = () => {
+    switch (location.pathname) {
+      case '/':
+        return 0;
+      case '/run':
+        return 1;
+      case '/history':
+        return 2;
+      default:
+        return 0;
+    }
   };
 
   return (
@@ -28,7 +33,7 @@ export default function BottomNav() {
       elevation={3}
     >
       <BottomNavigation
-        value={getPathValue()}
+        value={getCurrentValue()}
         onChange={(_, newValue) => {
           switch (newValue) {
             case 0:
