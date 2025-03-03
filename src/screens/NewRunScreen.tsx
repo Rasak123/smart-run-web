@@ -86,17 +86,15 @@ function MapComponent({ center, locations }: { center: [number, number], locatio
 export default function NewRunScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const activityType = location.state?.activityType || 'run';
-  const goalType = location.state?.goalType;
-
+  const [activityType, setActivityType] = useState<'walk' | 'run'>('run');
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(0);
   const [distance, setDistance] = useState(0);
-  const [calories, setCalories] = useState(0);
   const [pace, setPace] = useState(0);
+  const [calories, setCalories] = useState(0);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [currentLocation, setCurrentLocation] = useState<[number, number]>([25.2048, 55.2708]); // Default to Dubai
   const [hasGPS, setHasGPS] = useState(false);
-  const [locations, setLocations] = useState<Location[]>([]);
   const [dailyGoal, setDailyGoal] = useState({ current: 0, target: 5 }); // 5km daily goal
   const [prevDistance, setPrevDistance] = useState(0);
   const [heartRates, setHeartRates] = useState<number[]>([]);
