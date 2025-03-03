@@ -22,8 +22,8 @@ import {
   Polyline,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import { StorageService, Run } from '../services/StorageService';
+import * as L from 'leaflet';
+import { StorageService } from '../services/StorageService';
 import { HealthKitService } from '../services/HealthKitService';
 
 // Fix for default marker icon
