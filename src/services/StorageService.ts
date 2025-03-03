@@ -1,10 +1,20 @@
+export interface Location {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+  accuracy: number;
+  speed: number;
+}
+
 export interface Run {
   id: string;
   date: string;
   distance: number;
   duration: number;
   averagePace: number;
-  route: Array<{ lat: number; lng: number }>;
+  calories: number;
+  locations: Location[];
+  heartRates?: number[];
 }
 
 const API_URL = 'http://localhost:5000/api';

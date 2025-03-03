@@ -44,6 +44,17 @@ interface Location {
   speed: number;
 }
 
+interface Run {
+  id: string;
+  date: string;
+  distance: number;
+  duration: number;
+  averagePace: number;
+  calories: number;
+  locations: Location[];
+  heartRates: number[];
+}
+
 function MapComponent({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
@@ -214,7 +225,7 @@ export default function NewRunScreen() {
     }
 
     // Save run data
-    const runData = {
+    const runData: Run = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       distance,
