@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, Button, Typography, IconButton, Paper, Grid } from '@mui/material';
 import { MapContainer, TileLayer, useMap, Polyline, useMapEvents } from 'react-leaflet';
 import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation } from '@mui/icons-material';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 interface Stats {
@@ -22,6 +23,7 @@ function MapController({ onLocationFound }: { onLocationFound: (location: [numbe
   
   useEffect(() => {
     map.invalidateSize();
+    map.locate();
   }, [map]);
 
   useMapEvents({
@@ -47,6 +49,7 @@ export default function NewRunScreen() {
     calories: 0
   });
 
+  const mapRef = useRef<L.Map | null>(null);
   const watchId = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -118,6 +121,11 @@ export default function NewRunScreen() {
 
         setRoutePoints(prev => [...prev, newLocation]);
         updateStats(newLocation);
+        
+        // Update map view to follow user
+        if (mapRef.current) {
+          mapRef.current.setView([newLocation.lat, newLocation.lng]);
+        }
       },
       (error) => {
         console.error('Error:', error);
@@ -160,6 +168,7 @@ export default function NewRunScreen() {
           zoom={16}
           style={{ height: '100%', width: '100%' }}
           zoomControl={false}
+          ref={mapRef}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -217,9 +226,8 @@ export default function NewRunScreen() {
             '&:hover': { bgcolor: 'background.paper' }
           }}
           onClick={() => {
-            if (currentLocation) {
-              const map = document.querySelector('.leaflet-container')?._leafletRef;
-              if (map) map.setView(currentLocation, 16);
+            if (currentLocation && mapRef.current) {
+              mapRef.current.setView(currentLocation, 16);
             }
           }}
         >
