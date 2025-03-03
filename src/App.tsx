@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box } from '@mui/material';
@@ -100,6 +100,13 @@ function App() {
           flexDirection: 'column',
           minHeight: '100vh',
           bgcolor: 'background.default',
+          width: '100%',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: 'auto'
         }}>
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <Routes>
