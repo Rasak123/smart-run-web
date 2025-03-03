@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/smart-run-web/static/css/main.323d7611.css",
-    "main.js": "/smart-run-web/static/js/main.691138f1.js",
-    "static/js/453.0e31bf62.chunk.js": "/smart-run-web/static/js/453.0e31bf62.chunk.js",
+    "main.css": "/smart-run-web/static/css/main.f797d107.css",
+    "main.js": "/smart-run-web/static/js/main.599252f2.js",
+    "static/js/453.1ddb0676.chunk.js": "/smart-run-web/static/js/453.1ddb0676.chunk.js",
     "index.html": "/smart-run-web/index.html",
-    "main.323d7611.css.map": "/smart-run-web/static/css/main.323d7611.css.map",
-    "main.691138f1.js.map": "/smart-run-web/static/js/main.691138f1.js.map",
-    "453.0e31bf62.chunk.js.map": "/smart-run-web/static/js/453.0e31bf62.chunk.js.map"
+    "main.f797d107.css.map": "/smart-run-web/static/css/main.f797d107.css.map",
+    "main.599252f2.js.map": "/smart-run-web/static/js/main.599252f2.js.map",
+    "453.1ddb0676.chunk.js.map": "/smart-run-web/static/js/453.1ddb0676.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.323d7611.css",
-    "static/js/main.691138f1.js"
+    "static/css/main.f797d107.css",
+    "static/js/main.599252f2.js"
   ]
 }
