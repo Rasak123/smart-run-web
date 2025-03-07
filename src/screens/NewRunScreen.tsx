@@ -201,7 +201,7 @@ export default function NewRunScreen() {
   }, [currentLocation]);
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Activity Type Selection */}
       <Paper 
         elevation={3} 
@@ -229,7 +229,7 @@ export default function NewRunScreen() {
       </Paper>
 
       {/* Map */}
-      <Box sx={{ flex: 1, position: 'relative' }}>
+      <Box sx={{ flex: 1, position: 'relative', minHeight: '60vh' }}>
         <Map
           {...viewState}
           onMove={evt => setViewState(evt.viewState)}
