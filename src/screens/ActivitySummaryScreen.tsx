@@ -2,7 +2,6 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Grid, Button, Divider } from '@mui/material';
 import { DirectionsWalk, DirectionsRun, Share, Save } from '@mui/icons-material';
-import * as ReactMapGL from 'react-map-gl';
 import { Map, Source, Layer } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
