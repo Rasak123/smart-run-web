@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Button, Typography, IconButton, Paper, Grid, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Box, Button, Typography, IconButton, Paper, Grid, ToggleButtonGroup, ToggleButton, CircularProgress } from '@mui/material';
 import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation, Navigation } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { Map, Source, Layer, Marker, MapRef } from 'react-map-gl';
+import { Map, Source, Layer, Marker, NavigationControl, GeolocateControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
 
@@ -55,14 +55,17 @@ export default function NewRunScreen() {
     duration: '00:00:00',
     calories: 0
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   const watchId = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
   const mapRef = useRef<MapRef>(null);
+  const geolocateRef = useRef<GeolocateControl>(null);
 
   useEffect(() => {
     // Get initial location
+    setIsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
@@ -72,9 +75,24 @@ export default function NewRunScreen() {
           longitude: newLocation[0],
           latitude: newLocation[1]
         }));
+        setIsLoading(false);
+        
+        // Trigger the geolocate control after a short delay
+        setTimeout(() => {
+          if (geolocateRef.current) {
+            geolocateRef.current.trigger();
+          }
+        }, 1000);
       },
       (error) => {
         console.error('Error getting location:', error);
+        setIsLoading(false);
+        alert('Error getting location. Please check your GPS permissions.');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
       }
     );
 
@@ -190,15 +208,28 @@ export default function NewRunScreen() {
   };
 
   const centerOnUser = useCallback(() => {
-    if (currentLocation) {
-      setViewState(prev => ({
-        ...prev,
-        longitude: currentLocation[0],
-        latitude: currentLocation[1],
-        zoom: 16
-      }));
+    if (geolocateRef.current) {
+      geolocateRef.current.trigger();
     }
-  }, [currentLocation]);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <Box 
+        sx={{ 
+          height: '100vh', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 2
+        }}
+      >
+        <CircularProgress />
+        <Typography>Getting your location...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -238,6 +269,15 @@ export default function NewRunScreen() {
           mapboxAccessToken={MAPBOX_TOKEN}
           ref={mapRef}
         >
+          <GeolocateControl
+            ref={geolocateRef}
+            position="top-right"
+            trackUserLocation
+            showUserHeading
+            showAccuracyCircle
+          />
+          <NavigationControl position="top-right" />
+          
           {routePoints.length > 0 && (
             <Source
               type="geojson"
@@ -282,7 +322,7 @@ export default function NewRunScreen() {
               '&:hover': { bgcolor: 'background.paper' }
             }}
           >
-            <Navigation />
+            <MyLocation />
           </IconButton>
         </Box>
       </Box>
