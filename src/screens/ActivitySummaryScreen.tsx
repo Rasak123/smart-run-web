@@ -1,151 +1,188 @@
 import React from 'react';
-import { Box, Button, Typography, Paper, Grid, IconButton } from '@mui/material';
-import { Share, ArrowBack } from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
-import L from 'leaflet';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Box, Typography, Paper, Grid, Button, Divider } from '@mui/material';
+import { DirectionsWalk, DirectionsRun, Share, Save } from '@mui/icons-material';
+import Map, { Source, Layer } from 'react-map-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
 
-interface ActivitySummaryState {
+// Replace with your Mapbox token
+const MAPBOX_TOKEN = 'pk.eyJ1IjoicmFzYWsxMjMiLCJhIjoiY2t0NnhvYjB2MHJtMzJwbXNsdXRqOGZrbiJ9.tHekVv3YAGQwCXGm3RWePQ';
+
+interface ActivityState {
   distance: number;
-  duration: string;
   pace: string;
+  duration: string;
   calories: number;
   routePoints: Location[];
   activityType: 'walk' | 'run';
   date: Date;
 }
 
-export default function ActivitySummaryScreen() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const state = location.state as ActivitySummaryState;
+const routeLayer = {
+  type: 'line',
+  layout: {
+    'line-join': 'round',
+    'line-cap': 'round'
+  },
+  paint: {
+    'line-color': '#FC5200',
+    'line-width': 4
+  }
+} as const;
 
-  if (!state) {
+export default function ActivitySummaryScreen() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activity = location.state as ActivityState;
+
+  if (!activity) {
     navigate('/');
     return null;
   }
 
-  const { distance, duration, pace, calories, routePoints, activityType, date } = state;
+  // Calculate map bounds
+  const coordinates = activity.routePoints.map(point => [point.lng, point.lat]);
+  const bounds = coordinates.reduce(
+    (bounds, coord) => {
+      return {
+        minLng: Math.min(bounds.minLng, coord[0]),
+        maxLng: Math.max(bounds.maxLng, coord[0]),
+        minLat: Math.min(bounds.minLat, coord[1]),
+        maxLat: Math.max(bounds.maxLat, coord[1]),
+      };
+    },
+    {
+      minLng: coordinates[0][0],
+      maxLng: coordinates[0][0],
+      minLat: coordinates[0][1],
+      maxLat: coordinates[0][1],
+    }
+  );
 
-  const handleSave = () => {
-    // Save to storage and navigate to home
-    navigate('/');
+  // Add padding to bounds
+  const padding = 0.01;
+  const viewState = {
+    longitude: (bounds.minLng + bounds.maxLng) / 2,
+    latitude: (bounds.minLat + bounds.maxLat) / 2,
+    zoom: 13,
+    bearing: 0,
+    pitch: 45,
+    padding: {
+      top: padding,
+      bottom: padding,
+      left: padding,
+      right: padding
+    }
   };
 
-  const bounds = routePoints.length > 0 
-    ? routePoints.reduce(
-        (bounds, point) => bounds.extend([point.lat, point.lng]),
-        L.latLngBounds([routePoints[0].lat, routePoints[0].lng], [routePoints[0].lat, routePoints[0].lng])
-      )
-    : null;
+  const handleSave = () => {
+    // TODO: Save activity to storage
+    navigate('/history');
+  };
+
+  const handleShare = () => {
+    // TODO: Implement sharing functionality
+  };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
       {/* Header */}
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <IconButton onClick={() => navigate('/')}>
-          <ArrowBack />
-        </IconButton>
-        <Typography variant="h6">Activity Summary</Typography>
-        <IconButton>
-          <Share />
-        </IconButton>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {activity.activityType === 'run' ? <DirectionsRun /> : <DirectionsWalk />}
+        <Typography variant="h5" component="h1">
+          Activity Summary
+        </Typography>
       </Box>
 
       {/* Map */}
-      <Box sx={{ height: '35%', width: '100%' }}>
-        <MapContainer
-          bounds={bounds || [[25.2048, 55.2708], [25.2048, 55.2708]]}
-          style={{ height: '100%', width: '100%' }}
-          zoomControl={false}
+      <Paper sx={{ flex: 1, overflow: 'hidden', borderRadius: 2 }}>
+        <Map
+          {...viewState}
+          style={{ width: '100%', height: '100%' }}
+          mapStyle="mapbox://styles/mapbox/streets-v12"
+          mapboxAccessToken={MAPBOX_TOKEN}
+          interactive={false}
         >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; OpenStreetMap contributors'
-          />
-          {routePoints.length > 1 && (
-            <Polyline
-              positions={routePoints.map(point => [point.lat, point.lng])}
-              color="#FC5200"
-              weight={4}
-            />
-          )}
-        </MapContainer>
-      </Box>
+          <Source
+            type="geojson"
+            data={{
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: activity.routePoints.map(point => [point.lng, point.lat])
+              }
+            }}
+          >
+            <Layer {...routeLayer} />
+          </Source>
+        </Map>
+      </Paper>
 
-      {/* Stats Summary */}
-      <Paper 
-        sx={{ 
-          flex: 1,
-          mt: -3,
-          borderRadius: '24px 24px 0 0',
-          overflow: 'hidden'
-        }}
-        elevation={3}
-      >
-        <Box sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>
-            {activityType === 'run' ? 'Running' : 'Walking'} Activity
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {new Date(date).toLocaleDateString()} at {new Date(date).toLocaleTimeString()}
-          </Typography>
-
-          <Grid container spacing={3} sx={{ mt: 2 }}>
-            <Grid item xs={6}>
-              <Paper sx={{ p: 2, textAlign: 'center' }} elevation={1}>
-                <Typography variant="h4" color="primary">
-                  {distance.toFixed(2)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Distance (km)
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6}>
-              <Paper sx={{ p: 2, textAlign: 'center' }} elevation={1}>
-                <Typography variant="h4" color="primary">
-                  {duration}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Duration
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6}>
-              <Paper sx={{ p: 2, textAlign: 'center' }} elevation={1}>
-                <Typography variant="h4" color="primary">
-                  {pace}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Pace (min/km)
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6}>
-              <Paper sx={{ p: 2, textAlign: 'center' }} elevation={1}>
-                <Typography variant="h4" color="primary">
-                  {calories}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Calories
-                </Typography>
-              </Paper>
-            </Grid>
+      {/* Stats */}
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Grid container spacing={3}>
+          <Grid item xs={6}>
+            <Typography variant="body2" color="text.secondary">Distance</Typography>
+            <Typography variant="h5">{activity.distance.toFixed(2)} km</Typography>
           </Grid>
+          <Grid item xs={6}>
+            <Typography variant="body2" color="text.secondary">Duration</Typography>
+            <Typography variant="h5">{activity.duration}</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="body2" color="text.secondary">Avg. Pace</Typography>
+            <Typography variant="h5">{activity.pace} /km</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="body2" color="text.secondary">Calories</Typography>
+            <Typography variant="h5">{activity.calories}</Typography>
+          </Grid>
+        </Grid>
 
+        <Divider sx={{ my: 2 }} />
+
+        {/* Additional Stats */}
+        <Grid container spacing={2}>
+          <Grid item xs={4}>
+            <Typography variant="body2" color="text.secondary">Elevation Gain</Typography>
+            <Typography variant="h6">127m</Typography>
+          </Grid>
+          <Grid item xs={4}>
+            <Typography variant="body2" color="text.secondary">Avg. Heart Rate</Typography>
+            <Typography variant="h6">142 bpm</Typography>
+          </Grid>
+          <Grid item xs={4}>
+            <Typography variant="body2" color="text.secondary">Temperature</Typography>
+            <Typography variant="h6">24°C</Typography>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Actions */}
+      <Grid container spacing={2}>
+        <Grid item xs={6}>
           <Button
             variant="contained"
             fullWidth
-            size="large"
+            startIcon={<Save />}
             onClick={handleSave}
-            sx={{ mt: 4, borderRadius: 3, py: 1.5 }}
           >
             Save Activity
           </Button>
-        </Box>
-      </Paper>
+        </Grid>
+        <Grid item xs={6}>
+          <Button
+            variant="outlined"
+            fullWidth
+            startIcon={<Share />}
+            onClick={handleShare}
+          >
+            Share
+          </Button>
+        </Grid>
+      </Grid>
     </Box>
   );
 }

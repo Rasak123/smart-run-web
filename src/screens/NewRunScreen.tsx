@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Button, Typography, IconButton, Paper, Grid, ToggleButtonGroup, ToggleButton } from '@mui/material';
-import { MapContainer, TileLayer, useMap, Polyline, useMapEvents } from 'react-leaflet';
-import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation } from '@mui/icons-material';
+import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation, Navigation } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import Map, { Source, Layer, Marker } from 'react-map-gl';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
+
+// Replace with your Mapbox token
+const MAPBOX_TOKEN = 'pk.eyJ1IjoicmFzYWsxMjMiLCJhIjoiY2t0NnhvYjB2MHJtMzJwbXNsdXRqOGZrbiJ9.tHekVv3YAGQwCXGm3RWePQ';
 
 interface Stats {
   distance: number;
@@ -14,24 +17,25 @@ interface Stats {
   calories: number;
 }
 
-function MapController({ onLocationFound }: { onLocationFound: (location: [number, number]) => void }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.invalidateSize();
-    map.locate();
-  }, [map]);
-
-  useMapEvents({
-    locationfound: (e) => {
-      const { lat, lng } = e.latlng;
-      map.setView([lat, lng], 16);
-      onLocationFound([lat, lng]);
-    }
-  });
-
-  return null;
+interface ViewState {
+  longitude: number;
+  latitude: number;
+  zoom: number;
+  bearing: number;
+  pitch: number;
 }
+
+const routeLayer = {
+  type: 'line',
+  layout: {
+    'line-join': 'round',
+    'line-cap': 'round'
+  },
+  paint: {
+    'line-color': '#FC5200',
+    'line-width': 4
+  }
+} as const;
 
 export default function NewRunScreen() {
   const navigate = useNavigate();
@@ -39,6 +43,13 @@ export default function NewRunScreen() {
   const [isActive, setIsActive] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const [routePoints, setRoutePoints] = useState<Location[]>([]);
+  const [viewState, setViewState] = useState<ViewState>({
+    longitude: 55.2708, // Default to Dubai
+    latitude: 25.2048,
+    zoom: 15,
+    bearing: 0,
+    pitch: 45
+  });
   const [stats, setStats] = useState<Stats>({
     distance: 0,
     pace: '0:00',
@@ -46,12 +57,28 @@ export default function NewRunScreen() {
     calories: 0
   });
 
-  const mapRef = useRef<L.Map | null>(null);
   const watchId = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
 
   useEffect(() => {
+    // Get initial location
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
+        setCurrentLocation(newLocation);
+        setViewState(prev => ({
+          ...prev,
+          longitude: newLocation[0],
+          latitude: newLocation[1]
+        }));
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+      }
+    );
+
     return () => {
       if (watchId.current) navigator.geolocation.clearWatch(watchId.current);
       if (timerRef.current) clearInterval(timerRef.current);
@@ -120,9 +147,11 @@ export default function NewRunScreen() {
         updateStats(newLocation);
         
         // Update map view to follow user
-        if (mapRef.current) {
-          mapRef.current.setView([newLocation.lat, newLocation.lng]);
-        }
+        setViewState(prev => ({
+          ...prev,
+          longitude: newLocation.lng,
+          latitude: newLocation.lat
+        }));
       },
       (error) => {
         console.error('Error:', error);
@@ -161,9 +190,16 @@ export default function NewRunScreen() {
     });
   };
 
-  const handleLocationFound = (location: [number, number]) => {
-    setCurrentLocation(location);
-  };
+  const centerOnUser = useCallback(() => {
+    if (currentLocation) {
+      setViewState(prev => ({
+        ...prev,
+        longitude: currentLocation[0],
+        latitude: currentLocation[1],
+        zoom: 16
+      }));
+    }
+  }, [currentLocation]);
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -195,95 +231,98 @@ export default function NewRunScreen() {
 
       {/* Map */}
       <Box sx={{ flex: 1, position: 'relative' }}>
-        <MapContainer
-          center={currentLocation || [25.2048, 55.2708]} // Default to Dubai
-          zoom={16}
-          style={{ height: '100%', width: '100%' }}
-          zoomControl={false}
+        <Map
+          {...viewState}
+          onMove={evt => setViewState(evt.viewState)}
+          style={{ width: '100%', height: '100%' }}
+          mapStyle="mapbox://styles/mapbox/streets-v12"
+          mapboxAccessToken={MAPBOX_TOKEN}
           ref={mapRef}
         >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; OpenStreetMap contributors'
-          />
-          <MapController onLocationFound={handleLocationFound} />
-          {routePoints.length > 1 && (
-            <Polyline
-              positions={routePoints.map(point => [point.lat, point.lng])}
-              color="#FC5200"
-              weight={4}
-            />
+          {routePoints.length > 0 && (
+            <Source
+              type="geojson"
+              data={{
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: routePoints.map(point => [point.lng, point.lat])
+                }
+              }}
+            >
+              <Layer {...routeLayer} />
+            </Source>
           )}
-        </MapContainer>
+          {currentLocation && (
+            <Marker
+              longitude={currentLocation[0]}
+              latitude={currentLocation[1]}
+              anchor="center"
+            >
+              <Box
+                sx={{
+                  width: 20,
+                  height: 20,
+                  bgcolor: 'primary.main',
+                  borderRadius: '50%',
+                  border: '3px solid white',
+                  boxShadow: 2
+                }}
+              />
+            </Marker>
+          )}
+        </Map>
 
-        {/* Location Button */}
-        <IconButton
-          sx={{
-            position: 'absolute',
-            bottom: 100,
-            right: 16,
-            bgcolor: 'background.paper',
-            '&:hover': { bgcolor: 'background.paper' }
-          }}
-          onClick={() => {
-            if (currentLocation && mapRef.current) {
-              mapRef.current.setView(currentLocation, 16);
-            }
-          }}
-        >
-          <MyLocation />
-        </IconButton>
+        {/* Map Controls */}
+        <Box sx={{ position: 'absolute', right: 16, bottom: 100 }}>
+          <IconButton
+            onClick={centerOnUser}
+            sx={{
+              bgcolor: 'background.paper',
+              '&:hover': { bgcolor: 'background.paper' }
+            }}
+          >
+            <Navigation />
+          </IconButton>
+        </Box>
       </Box>
 
-      {/* Stats Panel */}
-      <Paper 
-        sx={{ 
-          padding: 2,
-          borderRadius: '24px 24px 0 0',
-          bgcolor: 'background.paper'
-        }}
-        elevation={3}
-      >
+      {/* Stats */}
+      <Paper sx={{ p: 2 }}>
         <Grid container spacing={2}>
-          <Grid item xs={6}>
-            <Typography variant="caption" color="text.secondary">Distance</Typography>
-            <Typography variant="h6">{stats.distance.toFixed(2)} km</Typography>
+          <Grid item xs={3}>
+            <Typography variant="body2" color="text.secondary">Distance</Typography>
+            <Typography variant="h6">{stats.distance.toFixed(2)}km</Typography>
           </Grid>
-          <Grid item xs={6}>
-            <Typography variant="caption" color="text.secondary">Pace</Typography>
-            <Typography variant="h6">{stats.pace} /km</Typography>
+          <Grid item xs={3}>
+            <Typography variant="body2" color="text.secondary">Pace</Typography>
+            <Typography variant="h6">{stats.pace}/km</Typography>
           </Grid>
-          <Grid item xs={6}>
-            <Typography variant="caption" color="text.secondary">Duration</Typography>
+          <Grid item xs={3}>
+            <Typography variant="body2" color="text.secondary">Duration</Typography>
             <Typography variant="h6">{stats.duration}</Typography>
           </Grid>
-          <Grid item xs={6}>
-            <Typography variant="caption" color="text.secondary">Calories</Typography>
+          <Grid item xs={3}>
+            <Typography variant="body2" color="text.secondary">Calories</Typography>
             <Typography variant="h6">{stats.calories}</Typography>
           </Grid>
         </Grid>
-
-        {/* Start/Stop Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={isActive ? handleStop : handleStart}
-            startIcon={isActive ? <Stop /> : <PlayArrow />}
-            sx={{
-              borderRadius: 3,
-              px: 4,
-              py: 1.5,
-              bgcolor: isActive ? 'error.main' : 'primary.main',
-              '&:hover': {
-                bgcolor: isActive ? 'error.dark' : 'primary.dark',
-              }
-            }}
-          >
-            {isActive ? 'Stop Activity' : 'Start Activity'}
-          </Button>
-        </Box>
       </Paper>
+
+      {/* Action Button */}
+      <Box sx={{ p: 2 }}>
+        <Button
+          variant="contained"
+          fullWidth
+          size="large"
+          onClick={isActive ? handleStop : handleStart}
+          startIcon={isActive ? <Stop /> : <PlayArrow />}
+          color={isActive ? 'error' : 'primary'}
+        >
+          {isActive ? 'Stop Activity' : 'Start Activity'}
+        </Button>
+      </Box>
     </Box>
   );
 }
