@@ -31,7 +31,7 @@ const routeLayer = {
     'line-cap': 'round'
   },
   paint: {
-    'line-color': '#FC5200',
+    'line-color': '#000000',
     'line-width': 4
   }
 } as const;
@@ -265,7 +265,7 @@ export default function NewRunScreen() {
           {...viewState}
           onMove={evt => setViewState(evt.viewState)}
           style={{ width: '100%', height: '100%' }}
-          mapStyle="mapbox://styles/mapbox/streets-v12"
+          mapStyle="mapbox://styles/mapbox/light-v11"
           mapboxAccessToken={MAPBOX_TOKEN}
           ref={mapRef}
         >
@@ -275,6 +275,7 @@ export default function NewRunScreen() {
             trackUserLocation
             showUserHeading
             showAccuracyCircle
+            positionOptions={{ enableHighAccuracy: true }}
           />
           <NavigationControl position="top-right" />
           
@@ -301,12 +302,12 @@ export default function NewRunScreen() {
             >
               <Box
                 sx={{
-                  width: 20,
-                  height: 20,
-                  bgcolor: 'primary.main',
+                  width: 16,
+                  height: 16,
+                  bgcolor: '#007AFF',
                   borderRadius: '50%',
-                  border: '3px solid white',
-                  boxShadow: 2
+                  border: '2px solid white',
+                  boxShadow: '0 0 0 2px rgba(0,122,255,0.2)'
                 }}
               />
             </Marker>
