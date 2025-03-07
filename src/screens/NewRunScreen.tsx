@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Button, Typography, IconButton, Paper, Grid, ToggleButtonGroup, ToggleButton, CircularProgress } from '@mui/material';
 import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation, Navigation } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { Map, Source, Layer, Marker, NavigationControl, GeolocateControl } from 'react-map-gl';
+import Map, { Source, Layer, Marker, NavigationControl, GeolocateControl, MapRef } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
 
