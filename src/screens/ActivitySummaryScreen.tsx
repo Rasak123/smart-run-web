@@ -86,7 +86,7 @@ export default function ActivitySummaryScreen() {
   };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {activity.activityType === 'run' ? <DirectionsRun /> : <DirectionsWalk />}
@@ -96,7 +96,7 @@ export default function ActivitySummaryScreen() {
       </Box>
 
       {/* Map */}
-      <Paper sx={{ flex: 1, overflow: 'hidden', borderRadius: 2 }}>
+      <Paper sx={{ flex: 1, overflow: 'hidden', borderRadius: 2, minHeight: '40vh' }}>
         <Map
           {...viewState}
           style={{ width: '100%', height: '100%' }}
