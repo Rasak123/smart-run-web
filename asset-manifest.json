@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/smart-run-web/static/css/main.7e77d5a4.css",
-    "main.js": "/smart-run-web/static/js/main.cdf3a52e.js",
+    "main.js": "/smart-run-web/static/js/main.970939cc.js",
     "index.html": "/smart-run-web/index.html",
     "main.7e77d5a4.css.map": "/smart-run-web/static/css/main.7e77d5a4.css.map",
-    "main.cdf3a52e.js.map": "/smart-run-web/static/js/main.cdf3a52e.js.map"
+    "main.970939cc.js.map": "/smart-run-web/static/js/main.970939cc.js.map"
   },
   "entrypoints": [
     "static/css/main.7e77d5a4.css",
-    "static/js/main.cdf3a52e.js"
+    "static/js/main.970939cc.js"
   ]
 }
