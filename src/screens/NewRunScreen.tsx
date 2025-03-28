@@ -3,7 +3,7 @@ import { Box, Button, Typography, IconButton, Paper, Grid, ToggleButtonGroup, To
 import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Map, Source, Layer, Marker, NavigationControl, GeolocateControl, MapRef } from 'react-map-gl/maplibre';
-import type { MapViewState } from 'react-map-gl/maplibre';
+import type { ViewState } from 'react-map-gl/maplibre';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
 
@@ -15,14 +15,6 @@ interface Stats {
   pace: string;
   duration: string;
   calories: number;
-}
-
-interface MapViewState {
-  longitude: number;
-  latitude: number;
-  zoom: number;
-  bearing: number;
-  pitch: number;
 }
 
 const routeLayer = {
@@ -37,19 +29,27 @@ const routeLayer = {
   }
 } as const;
 
+const initialViewState: ViewState = {
+  longitude: 55.2708, // Default to Dubai
+  latitude: 25.2048,
+  zoom: 15,
+  bearing: 0,
+  pitch: 45,
+  padding: {
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0
+  }
+};
+
 export default function NewRunScreen() {
   const navigate = useNavigate();
   const [activityType, setActivityType] = useState<'walk' | 'run'>('run');
   const [isActive, setIsActive] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const [routePoints, setRoutePoints] = useState<Location[]>([]);
-  const [viewState, setViewState] = useState<MapViewState>({
-    longitude: 55.2708, // Default to Dubai
-    latitude: 25.2048,
-    zoom: 15,
-    bearing: 0,
-    pitch: 45
-  });
+  const [viewState, setViewState] = useState(initialViewState);
   const [stats, setStats] = useState<Stats>({
     distance: 0,
     pace: '0:00',
@@ -264,10 +264,9 @@ export default function NewRunScreen() {
       <Box sx={{ flex: 1, position: 'relative', minHeight: '60vh' }}>
         <Map
           {...viewState}
-          onMove={(evt: { viewState: MapViewState }) => setViewState(evt.viewState)}
+          onMove={(evt: { viewState: ViewState }) => setViewState(evt.viewState)}
           style={{ width: '100%', height: '100%' }}
           mapStyle="mapbox://styles/mapbox/streets-v12"
-          mapboxAccessToken={MAPBOX_TOKEN}
           ref={mapRef}
         >
           <GeolocateControl

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Grid, Button, Divider } from '@mui/material';
 import { DirectionsWalk, DirectionsRun, Share, ArrowBack } from '@mui/icons-material';
 import { Map, Source, Layer } from 'react-map-gl/maplibre';
+import type { ViewState } from 'react-map-gl/maplibre';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
 
@@ -62,7 +63,7 @@ export default function ActivitySummaryScreen() {
 
   // Add padding to bounds
   const padding = 0.01;
-  const viewState = {
+  const viewState: ViewState = {
     longitude: (bounds.minLng + bounds.maxLng) / 2,
     latitude: (bounds.minLat + bounds.maxLat) / 2,
     zoom: 13,
@@ -118,7 +119,6 @@ export default function ActivitySummaryScreen() {
           {...viewState}
           style={{ width: '100%', height: '100%' }}
           mapStyle="mapbox://styles/mapbox/streets-v12"
-          mapboxAccessToken={MAPBOX_TOKEN}
           interactive={false}
         >
           <Source
