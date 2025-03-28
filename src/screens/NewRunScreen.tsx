@@ -62,7 +62,7 @@ export default function NewRunScreen() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
   const mapRef = useRef<MapRef>(null);
-  const geolocateRef = useRef<any>(null);
+  const geolocateControlRef = useRef<any>(null);
 
   useEffect(() => {
     // Get initial location
@@ -80,8 +80,8 @@ export default function NewRunScreen() {
         
         // Trigger the geolocate control after a short delay
         setTimeout(() => {
-          if (geolocateRef.current) {
-            geolocateRef.current.trigger();
+          if (geolocateControlRef.current) {
+            geolocateControlRef.current.trigger();
           }
         }, 1000);
       },
@@ -209,8 +209,8 @@ export default function NewRunScreen() {
   };
 
   const centerOnUser = useCallback(() => {
-    if (geolocateRef.current) {
-      geolocateRef.current.trigger();
+    if (geolocateControlRef.current) {
+      geolocateControlRef.current.trigger();
     }
   }, []);
 
@@ -270,11 +270,9 @@ export default function NewRunScreen() {
           ref={mapRef}
         >
           <GeolocateControl
-            ref={geolocateRef}
+            ref={geolocateControlRef}
             position="top-right"
             trackUserLocation
-            showUserHeading
-            showAccuracyCircle
           />
           <NavigationControl position="top-right" />
           
