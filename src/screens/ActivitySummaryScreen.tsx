@@ -1,19 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { Box, Button, Typography, Paper, Grid } from '@mui/material';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Share, ArrowBack } from '@mui/icons-material';
-import 'ol/ol.css';
-import Map from 'ol/Map';
-import View from 'ol/View';
-import TileLayer from 'ol/layer/Tile';
-import VectorLayer from 'ol/layer/Vector';
-import VectorSource from 'ol/source/Vector';
-import OSM from 'ol/source/OSM';
-import { fromLonLat } from 'ol/proj';
-import Feature from 'ol/Feature';
-import LineString from 'ol/geom/LineString';
-import { Style, Stroke } from 'ol/style';
+import { Box, Typography, Paper, Grid, Button, Divider } from '@mui/material';
+import { DirectionsWalk, DirectionsRun, Share, ArrowBack } from '@mui/icons-material';
+import { Map, Source, Layer } from 'react-map-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
+
+// Replace with your Mapbox token
+const MAPBOX_TOKEN = 'pk.eyJ1IjoicmFzYWsxMjMiLCJhIjoiY2t0NnhvYjB2MHJtMzJwbXNsdXRqOGZrbiJ9.tHekVv3YAGQwCXGm3RWePQ';
 
 interface ActivityState {
   distance: number;
@@ -22,76 +16,65 @@ interface ActivityState {
   calories: number;
   routePoints: Location[];
   activityType: 'walk' | 'run';
-  date: string;
+  date: Date;
 }
+
+const routeLayer = {
+  type: 'line',
+  layout: {
+    'line-join': 'round',
+    'line-cap': 'round'
+  },
+  paint: {
+    'line-color': '#FC5200',
+    'line-width': 4
+  }
+} as const;
 
 export default function ActivitySummaryScreen() {
   const location = useLocation();
   const navigate = useNavigate();
-  const mapElement = useRef<HTMLDivElement>(null);
-  const state = location.state as ActivityState;
+  const activity = location.state as ActivityState;
 
-  useEffect(() => {
-    if (!mapElement.current || !state?.routePoints.length) return;
-
-    const vectorSource = new VectorSource();
-    
-    // Create route feature
-    const coordinates = state.routePoints.map(point => 
-      fromLonLat([point.lng, point.lat])
-    );
-    
-    const routeFeature = new Feature({
-      geometry: new LineString(coordinates)
-    });
-    
-    vectorSource.addFeature(routeFeature);
-
-    const vectorLayer = new VectorLayer({
-      source: vectorSource,
-      style: new Style({
-        stroke: new Stroke({
-          color: '#3388ff',
-          width: 4
-        })
-      })
-    });
-
-    // Calculate bounds for the route
-    const extent = vectorSource.getExtent();
-    
-    const map = new Map({
-      target: mapElement.current,
-      layers: [
-        new TileLayer({
-          source: new OSM()
-        }),
-        vectorLayer
-      ],
-      view: new View({
-        center: fromLonLat([
-          state.routePoints[0].lng,
-          state.routePoints[0].lat
-        ]),
-        zoom: 15
-      })
-    });
-
-    // Fit view to route
-    map.getView().fit(extent, {
-      padding: [50, 50, 50, 50],
-      maxZoom: 18
-    });
-
-    return () => {
-      map.setTarget(undefined);
-    };
-  }, [state?.routePoints]);
-
-  if (!state) {
+  if (!activity) {
     navigate('/');
     return null;
   }
+
+  // Calculate map bounds
+  const coordinates = activity.routePoints.map(point => [point.lng, point.lat]);
+  const bounds = coordinates.reduce(
+    (bounds, coord) => {
+      return {
+        minLng: Math.min(bounds.minLng, coord[0]),
+        maxLng: Math.max(bounds.maxLng, coord[0]),
+        minLat: Math.min(bounds.minLat, coord[1]),
+        maxLat: Math.max(bounds.maxLat, coord[1]),
+      };
+    },
+    {
+      minLng: coordinates[0][0],
+      maxLng: coordinates[0][0],
+      minLat: coordinates[0][1],
+      maxLat: coordinates[0][1],
+    }
+  );
+
+  // Add padding to bounds
+  const padding = 0.01;
+  const viewState = {
+    longitude: (bounds.minLng + bounds.maxLng) / 2,
+    latitude: (bounds.minLat + bounds.maxLat) / 2,
+    zoom: 13,
+    bearing: 0,
+    pitch: 45,
+    padding: {
+      top: padding,
+      bottom: padding,
+      left: padding,
+      right: padding
+    }
+  };
 
   const handleShare = () => {
     // Implement share functionality
@@ -117,7 +100,10 @@ export default function ActivitySummaryScreen() {
         >
           Back
         </Button>
-        <Typography variant="h6">Activity Summary</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {activity.activityType === 'run' ? <DirectionsRun /> : <DirectionsWalk />}
+          <Typography variant="h6">Activity Summary</Typography>
+        </Box>
         <Button 
           startIcon={<Share />}
           onClick={handleShare}
@@ -128,7 +114,27 @@ export default function ActivitySummaryScreen() {
 
       {/* Map */}
       <Box sx={{ flex: 1, minHeight: '40vh' }}>
-        <div ref={mapElement} style={{ width: '100%', height: '100%' }} />
+        <Map
+          {...viewState}
+          style={{ width: '100%', height: '100%' }}
+          mapStyle="mapbox://styles/mapbox/streets-v12"
+          mapboxAccessToken={MAPBOX_TOKEN}
+          interactive={false}
+        >
+          <Source
+            type="geojson"
+            data={{
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: activity.routePoints.map(point => [point.lng, point.lat])
+              }
+            }}
+          >
+            <Layer {...routeLayer} />
+          </Source>
+        </Map>
       </Box>
 
       {/* Stats */}
@@ -136,19 +142,19 @@ export default function ActivitySummaryScreen() {
         <Grid container spacing={3}>
           <Grid item xs={6}>
             <Typography variant="body2" color="text.secondary">Distance</Typography>
-            <Typography variant="h5">{state.distance.toFixed(2)}km</Typography>
+            <Typography variant="h5">{activity.distance.toFixed(2)}km</Typography>
           </Grid>
           <Grid item xs={6}>
             <Typography variant="body2" color="text.secondary">Pace</Typography>
-            <Typography variant="h5">{state.pace}/km</Typography>
+            <Typography variant="h5">{activity.pace}/km</Typography>
           </Grid>
           <Grid item xs={6}>
             <Typography variant="body2" color="text.secondary">Duration</Typography>
-            <Typography variant="h5">{state.duration}</Typography>
+            <Typography variant="h5">{activity.duration}</Typography>
           </Grid>
           <Grid item xs={6}>
             <Typography variant="body2" color="text.secondary">Calories</Typography>
-            <Typography variant="h5">{state.calories}</Typography>
+            <Typography variant="h5">{activity.calories}</Typography>
           </Grid>
         </Grid>
       </Paper>
