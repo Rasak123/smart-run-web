@@ -4,7 +4,7 @@ import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation } from '@mui
 import { useNavigate } from 'react-router-dom';
 import { Map, Source, Layer, Marker, NavigationControl, GeolocateControl, MapRef } from 'react-map-gl/maplibre';
 import type { ViewState } from 'react-map-gl/maplibre';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Location } from '../types';
 
 // Replace with your Mapbox token
@@ -266,7 +266,7 @@ export default function NewRunScreen() {
           {...viewState}
           onMove={(evt: { viewState: ViewState }) => setViewState(evt.viewState)}
           style={{ width: '100%', height: '100%' }}
-          mapStyle="mapbox://styles/mapbox/streets-v12"
+          mapStyle="https://api.maptiler.com/maps/streets/style.json?key=get_your_own_key"
           ref={mapRef}
         >
           <GeolocateControl

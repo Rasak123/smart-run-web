@@ -4,7 +4,7 @@ import { Box, Typography, Paper, Grid, Button, Divider } from '@mui/material';
 import { DirectionsWalk, DirectionsRun, Share, ArrowBack } from '@mui/icons-material';
 import { Map, Source, Layer } from 'react-map-gl/maplibre';
 import type { ViewState } from 'react-map-gl/maplibre';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Location } from '../types';
 
 // Replace with your Mapbox token
@@ -118,7 +118,7 @@ export default function ActivitySummaryScreen() {
         <Map
           {...viewState}
           style={{ width: '100%', height: '100%' }}
-          mapStyle="mapbox://styles/mapbox/streets-v12"
+          mapStyle="https://api.maptiler.com/maps/streets/style.json?key=get_your_own_key"
           interactive={false}
         >
           <Source
