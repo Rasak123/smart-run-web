@@ -17,6 +17,7 @@
     "@types/node": "^16.18.74",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
+    "@types/react-map-gl": "^6.1.7",
     "chart.js": "^4.4.8",
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.10.0",

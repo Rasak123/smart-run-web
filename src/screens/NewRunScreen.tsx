@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Button, Typography, IconButton, Paper, Grid, ToggleButtonGroup, ToggleButton, CircularProgress } from '@mui/material';
 import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import Map, { Source, Layer, Marker, NavigationControl, GeolocateControl, MapRef } from 'react-map-gl';
+import { Map, Source, Layer, Marker, NavigationControl, GeolocateControl, MapRef, ViewState } from 'react-map-gl/maplibre';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
 
@@ -263,7 +263,7 @@ export default function NewRunScreen() {
       <Box sx={{ flex: 1, position: 'relative', minHeight: '60vh' }}>
         <Map
           {...viewState}
-          onMove={evt => setViewState(evt.viewState)}
+          onMove={(evt: { viewState: ViewState }) => setViewState(evt.viewState)}
           style={{ width: '100%', height: '100%' }}
           mapStyle="mapbox://styles/mapbox/streets-v12"
           mapboxAccessToken={MAPBOX_TOKEN}

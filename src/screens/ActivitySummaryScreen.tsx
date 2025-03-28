@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Grid, Button, Divider } from '@mui/material';
 import { DirectionsWalk, DirectionsRun, Share, ArrowBack } from '@mui/icons-material';
-import { Map, Source, Layer } from 'react-map-gl';
+import { Map, Source, Layer } from 'react-map-gl/maplibre';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
 
