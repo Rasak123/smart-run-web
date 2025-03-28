@@ -2,12 +2,20 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Button, Typography, IconButton, Paper, Grid, ToggleButtonGroup, ToggleButton, CircularProgress } from '@mui/material';
 import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import Map, { Source, Layer, Marker, NavigationControl, GeolocateControl, MapRef } from 'react-map-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import 'ol/ol.css';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import OSM from 'ol/source/OSM';
+import { fromLonLat, transform } from 'ol/proj';
+import Feature from 'ol/Feature';
+import Point from 'ol/geom/Point';
+import LineString from 'ol/geom/LineString';
+import { Style, Stroke, Circle, Fill } from 'ol/style';
+import { defaults as defaultControls } from 'ol/control';
 import { Location } from '../types';
-
-// Replace with your Mapbox token
-const MAPBOX_TOKEN = 'pk.eyJ1IjoicmFzYWsxMjMiLCJhIjoiY2t0NnhvYjB2MHJtMzJwbXNsdXRqOGZrbiJ9.tHekVv3YAGQwCXGm3RWePQ';
 
 interface Stats {
   distance: number;
@@ -16,39 +24,12 @@ interface Stats {
   calories: number;
 }
 
-interface ViewState {
-  longitude: number;
-  latitude: number;
-  zoom: number;
-  bearing: number;
-  pitch: number;
-}
-
-const routeLayer = {
-  type: 'line',
-  layout: {
-    'line-join': 'round',
-    'line-cap': 'round'
-  },
-  paint: {
-    'line-color': '#000000',
-    'line-width': 4
-  }
-} as const;
-
 export default function NewRunScreen() {
   const navigate = useNavigate();
   const [activityType, setActivityType] = useState<'walk' | 'run'>('run');
   const [isActive, setIsActive] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const [routePoints, setRoutePoints] = useState<Location[]>([]);
-  const [viewState, setViewState] = useState<ViewState>({
-    longitude: 55.2708, // Default to Dubai
-    latitude: 25.2048,
-    zoom: 15,
-    bearing: 0,
-    pitch: 45
-  });
   const [stats, setStats] = useState<Stats>({
     distance: 0,
     pace: '0:00',
@@ -60,29 +41,75 @@ export default function NewRunScreen() {
   const watchId = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
-  const mapRef = useRef<MapRef>(null);
-  const geolocateRef = useRef<any>(null);
+  const mapRef = useRef<Map | null>(null);
+  const mapElement = useRef<HTMLDivElement>(null);
+  const vectorSourceRef = useRef<VectorSource | null>(null);
+  const locationFeatureRef = useRef<Feature<Point> | null>(null);
 
   useEffect(() => {
+    if (!mapElement.current) return;
+
+    // Initialize map
+    const vectorSource = new VectorSource();
+    vectorSourceRef.current = vectorSource;
+
+    const vectorLayer = new VectorLayer({
+      source: vectorSource,
+      style: new Style({
+        stroke: new Stroke({
+          color: '#3388ff',
+          width: 4
+        }),
+        image: new Circle({
+          radius: 8,
+          fill: new Fill({ color: '#3388ff' }),
+          stroke: new Stroke({
+            color: 'white',
+            width: 2
+          })
+        })
+      })
+    });
+
+    const map = new Map({
+      target: mapElement.current,
+      layers: [
+        new TileLayer({
+          source: new OSM()
+        }),
+        vectorLayer
+      ],
+      controls: defaultControls({
+        zoom: true,
+        rotate: false,
+        attribution: false
+      }),
+      view: new View({
+        center: fromLonLat([55.2708, 25.2048]), // Dubai
+        zoom: 15
+      })
+    });
+
+    mapRef.current = map;
+
     // Get initial location
     setIsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
-        setCurrentLocation(newLocation);
-        setViewState(prev => ({
-          ...prev,
-          longitude: newLocation[0],
-          latitude: newLocation[1]
-        }));
-        setIsLoading(false);
+        const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
+        setCurrentLocation(coords);
         
-        // Trigger the geolocate control after a short delay
-        setTimeout(() => {
-          if (geolocateRef.current) {
-            geolocateRef.current.trigger();
-          }
-        }, 1000);
+        const location = fromLonLat(coords);
+        map.getView().setCenter(location);
+
+        // Create location feature
+        const locationFeature = new Feature({
+          geometry: new Point(location)
+        });
+        locationFeatureRef.current = locationFeature;
+        vectorSource.addFeature(locationFeature);
+
+        setIsLoading(false);
       },
       (error) => {
         console.error('Error getting location:', error);
@@ -97,6 +124,9 @@ export default function NewRunScreen() {
     );
 
     return () => {
+      if (mapRef.current) {
+        mapRef.current.setTarget(undefined);
+      }
       if (watchId.current) navigator.geolocation.clearWatch(watchId.current);
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -160,15 +190,42 @@ export default function NewRunScreen() {
           timestamp: position.timestamp
         };
 
-        setRoutePoints(prev => [...prev, newLocation]);
+        setRoutePoints(prev => {
+          const updatedPoints = [...prev, newLocation];
+          
+          // Update route on map
+          if (vectorSourceRef.current && updatedPoints.length > 1) {
+            const coordinates = updatedPoints.map(point => 
+              fromLonLat([point.lng, point.lat])
+            );
+            
+            const routeFeature = new Feature({
+              geometry: new LineString(coordinates)
+            });
+            
+            vectorSourceRef.current.clear();
+            vectorSourceRef.current.addFeature(routeFeature);
+            
+            if (locationFeatureRef.current) {
+              vectorSourceRef.current.addFeature(locationFeatureRef.current);
+            }
+          }
+          
+          return updatedPoints;
+        });
+
+        // Update location marker
+        if (locationFeatureRef.current) {
+          const location = fromLonLat([newLocation.lng, newLocation.lat]);
+          locationFeatureRef.current.getGeometry()?.setCoordinates(location);
+        }
+
+        // Update map view
+        if (mapRef.current) {
+          mapRef.current.getView().setCenter(fromLonLat([newLocation.lng, newLocation.lat]));
+        }
+
         updateStats(newLocation);
-        
-        // Update map view to follow user
-        setViewState(prev => ({
-          ...prev,
-          longitude: newLocation.lng,
-          latitude: newLocation.lat
-        }));
       },
       (error) => {
         console.error('Error:', error);
@@ -208,10 +265,11 @@ export default function NewRunScreen() {
   };
 
   const centerOnUser = useCallback(() => {
-    if (geolocateRef.current) {
-      geolocateRef.current.trigger();
+    if (mapRef.current && currentLocation) {
+      mapRef.current.getView().setCenter(fromLonLat(currentLocation));
+      mapRef.current.getView().setZoom(16);
     }
-  }, []);
+  }, [currentLocation]);
 
   if (isLoading) {
     return (
@@ -261,59 +319,8 @@ export default function NewRunScreen() {
 
       {/* Map */}
       <Box sx={{ flex: 1, position: 'relative', minHeight: '60vh' }}>
-        <Map
-          {...viewState}
-          onMove={evt => setViewState(evt.viewState)}
-          style={{ width: '100%', height: '100%' }}
-          mapStyle="mapbox://styles/mapbox/light-v11"
-          mapboxAccessToken={MAPBOX_TOKEN}
-          ref={mapRef}
-        >
-          <GeolocateControl
-            ref={geolocateRef}
-            position="top-right"
-            trackUserLocation
-            showUserHeading
-            showAccuracyCircle
-            positionOptions={{ enableHighAccuracy: true }}
-          />
-          <NavigationControl position="top-right" />
-          
-          {routePoints.length > 0 && (
-            <Source
-              type="geojson"
-              data={{
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                  type: 'LineString',
-                  coordinates: routePoints.map(point => [point.lng, point.lat])
-                }
-              }}
-            >
-              <Layer {...routeLayer} />
-            </Source>
-          )}
-          {currentLocation && (
-            <Marker
-              longitude={currentLocation[0]}
-              latitude={currentLocation[1]}
-              anchor="center"
-            >
-              <Box
-                sx={{
-                  width: 16,
-                  height: 16,
-                  bgcolor: '#007AFF',
-                  borderRadius: '50%',
-                  border: '2px solid white',
-                  boxShadow: '0 0 0 2px rgba(0,122,255,0.2)'
-                }}
-              />
-            </Marker>
-          )}
-        </Map>
-
+        <div ref={mapElement} style={{ width: '100%', height: '100%' }} />
+        
         {/* Map Controls */}
         <Box sx={{ position: 'absolute', right: 16, bottom: 100 }}>
           <IconButton
