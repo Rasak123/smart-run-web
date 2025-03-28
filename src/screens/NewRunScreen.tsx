@@ -3,7 +3,7 @@ import { Box, Button, Typography, IconButton, Paper, Grid, ToggleButtonGroup, To
 import { DirectionsWalk, DirectionsRun, PlayArrow, Stop, MyLocation } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Map, Source, Layer, Marker, NavigationControl, GeolocateControl, MapRef } from 'react-map-gl/maplibre';
-import type { ViewState } from 'react-map-gl/maplibre';
+import type { MapViewState } from 'react-map-gl/maplibre';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Location } from '../types';
 
@@ -17,7 +17,7 @@ interface Stats {
   calories: number;
 }
 
-interface ViewState {
+interface MapViewState {
   longitude: number;
   latitude: number;
   zoom: number;
@@ -43,7 +43,7 @@ export default function NewRunScreen() {
   const [isActive, setIsActive] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const [routePoints, setRoutePoints] = useState<Location[]>([]);
-  const [viewState, setViewState] = useState<ViewState>({
+  const [viewState, setViewState] = useState<MapViewState>({
     longitude: 55.2708, // Default to Dubai
     latitude: 25.2048,
     zoom: 15,
@@ -264,7 +264,7 @@ export default function NewRunScreen() {
       <Box sx={{ flex: 1, position: 'relative', minHeight: '60vh' }}>
         <Map
           {...viewState}
-          onMove={(evt: { viewState: ViewState }) => setViewState(evt.viewState)}
+          onMove={(evt: { viewState: MapViewState }) => setViewState(evt.viewState)}
           style={{ width: '100%', height: '100%' }}
           mapStyle="mapbox://styles/mapbox/streets-v12"
           mapboxAccessToken={MAPBOX_TOKEN}
